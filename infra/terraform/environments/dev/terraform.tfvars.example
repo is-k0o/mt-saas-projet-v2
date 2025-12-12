@@ -1,9 +1,0 @@
-# Copy this file to `terraform.tfvars` (it will be gitignored) and fill values.
-# You can also set sensitive values via environment variables:
-#   export TF_VAR_sql_admin_password='...'
-
-# (optional) Allow your current public IP (single IP) to connect from Azure Data Studio:
-# allowed_client_ip = "203.0.113.10"
-
-# IMPORTANT: set a strong password via TF_VAR_sql_admin_password or terraform.tfvars
-# sql_admin_password = "REPLACE_ME"
