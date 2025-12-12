@@ -1,39 +1,82 @@
-# Decisions Log (Template)
+# DECISIONS — mt-saas v2
 
-**Purpose:** capture decisions that affect architecture, naming, security, or data contracts.  
-**Rule:** any breaking change must also be recorded in `docs/BREAKING_CHANGES.md`.
-
----
-
-## Decision format
-**ID:** DEC-YYYYMMDD-XX  
-**Date:** YYYY-MM-DD  
-**Status:** Proposed | Accepted | Deprecated  
-**Area:** Auth | API | DB | Storage | Terraform | Fabric | UX | Other  
-**Decision:** <one sentence>  
-**Context:** <why this mattered>  
-**Options considered:**  
-- A) ...  
-- B) ...  
-- C) ...  
-**Chosen option:** <A/B/C>  
-**Rationale:** <why chosen>  
-**Consequences:** <what this changes / what it enables / what it risks>  
-**Implementation notes:** <where/how to implement>  
-**Links:** <PR/commit/docs>
+> Lightweight decision log (ADR-style but simple).  
+> Each entry should explain *why* the decision was taken.
 
 ---
 
-## Examples (fill with your real decisions)
-
-**ID:** DEC-YYYYMMDD-01  
-**Date:** YYYY-MM-DD  
+## D001 — Mono-repo structure
+**Date:** 2025-12-12  
 **Status:** Accepted  
-**Area:** Auth  
-**Decision:** Use Option B authorization (APIM coarse, WebApp fine + RLS).  
-**Context:** Two-plane architecture; Fabric entry cannot be filtered by APIM.  
-**Options considered:** A) Tenant-aware roles at gateway  B) Directory DB membership + RLS  
-**Chosen option:** B  
-**Rationale:** Scales better; reduces Entra role sprawl; keeps hard stop at DB.  
-**Consequences:** WebApp must implement membership checks on every request.  
-**Implementation notes:** `docs/contracts/auth.md`; middleware + Directory DB lookups.  
+**Decision:** Use a single repository containing docs + infra + DB migrations + API + SPA.  
+**Why:** Avoid drift; one commit can include infra + schema + code + docs.  
+**Consequences:** Need clean folder structure (`docs/`, `infra/`, `db/`, `src/`, `.github/`).
+
+---
+
+## D002 — Two-plane data architecture
+**Date:** 2025-12-12  
+**Status:** Accepted  
+**Decision:** Two planes:
+- Write plane = Azure SQL (core + directory) + Storage
+- Read plane = Fabric Lakehouse (analytics/reporting)  
+**Why:** SQL is transactional source of truth; Fabric is for analytics without slowing the app.  
+**Consequences:** APIM can’t “filter” Fabric side → isolation must be enforced in SQL/WebApp and in Fabric access model.
+
+---
+
+## D003 — Tenancy model and URLs
+**Date:** 2025-12-12  
+**Status:** Accepted  
+**Decision:** Routing: `/t/{cabinet_slug}/companies/{company_slug}/...`  
+DB: `cabinet_id` + `company_id` everywhere.  
+**Why:** Scales better than “one Entra role per tenant slug” as tenant count grows.  
+**Consequences:** Directory DB must map users → cabinets/companies; WebApp must enforce membership.
+
+---
+
+## D004 — Security model (Option B)
+**Date:** 2025-12-12  
+**Status:** Accepted  
+**Decision:** APIM is coarse-grained (token validation + app roles), fine-grained access is enforced by:
+- WebApp membership check (Directory DB)  
+- SQL RLS (hard stop)  
+- Storage metadata scope checks (hard stop)  
+**Why:** URL can be tampered; APIM alone shouldn’t be the only guard.  
+**Consequences:** RLS + membership must be correct; require deterministic storage metadata.
+
+---
+
+## D005 — Auth approach in Entra (App Roles via Groups)
+**Date:** 2025-12-12  
+**Status:** Accepted  
+**Decision:** Use App Roles assigned to groups (avoid relying on `groups` claim directly).  
+**Why:** `groups` claim can overflow; roles are stable & APIM-friendly.  
+**Consequences:** Maintain role/group assignments during pilot.
+
+---
+
+## D006 — IaC strategy (Terraform + remote state)
+**Date:** 2025-12-12  
+**Status:** Accepted  
+**Decision:** Terraform for infra; remote state in Azure Blob; CI/CD via GitHub Actions (OIDC).  
+**Why:** Reproducibility; avoid clickops; no long-lived secrets for Azure auth.  
+**Consequences:** Bootstrap workflow required once per env; state backend must exist before `terraform init`.
+
+---
+
+## D007 — Public-first, harden later
+**Date:** 2025-12-12  
+**Status:** Accepted  
+**Decision:** First make pipeline fully functional with public access (dev), then harden gradually.  
+**Why:** Debugging private networking + CI/CD + DB migrations at once is too costly.  
+**Consequences:** Track hardening as explicit steps; avoid renaming resources to prevent replacements.
+
+---
+
+## D008 — DB migrations mechanism
+**Date:** 2025-12-12  
+**Status:** Proposed (TBD)  
+**Decision:** Prefer DbUp for ordered migrations + schema history.  
+**Why:** Prevent drift; repeatable deployments.  
+**Consequences:** Add a migrations runner project + a workflow `db-migrate-dev`.
