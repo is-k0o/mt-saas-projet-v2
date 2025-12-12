@@ -1,0 +1,46 @@
+name: bootstrap-tfstate-dev
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Create RG + Storage Account + Container for Terraform state (idempotent)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TFSTATE_RG="${{ vars.TFSTATE_RG }}"
+          TFSTATE_LOCATION="${{ vars.TFSTATE_LOCATION }}"
+          TFSTATE_SA="${{ vars.TFSTATE_STORAGE_ACCOUNT }}"
+          TFSTATE_CONTAINER="${{ vars.TFSTATE_CONTAINER }}"
+
+          echo "RG=$TFSTATE_RG"
+          echo "SA=$TFSTATE_SA"
+          echo "CONTAINER=$TFSTATE_CONTAINER"
+
+          az group create --name "$TFSTATE_RG" --location "$TFSTATE_LOCATION" 1>/dev/null
+
+          # Create storage account (ignore if exists)
+          az storage account show --name "$TFSTATE_SA" --resource-group "$TFSTATE_RG" 1>/dev/null 2>&1             || az storage account create               --name "$TFSTATE_SA"               --resource-group "$TFSTATE_RG"               --location "$TFSTATE_LOCATION"               --sku Standard_LRS               --kind StorageV2               --min-tls-version TLS1_2               --allow-blob-public-access false 1>/dev/null
+
+          # Create container (auth-mode login uses Entra)
+          az storage container create             --name "$TFSTATE_CONTAINER"             --account-name "$TFSTATE_SA"             --auth-mode login 1>/dev/null
+
+          echo "Bootstrap done."
