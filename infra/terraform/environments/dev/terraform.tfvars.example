@@ -1,0 +1,8 @@
+# Copy to `terraform.tfvars` for local runs (gitignored), or set values via GitHub Secrets.
+# You should NOT commit real passwords.
+
+# Optional: allow your current public IP (single IP) to connect from Azure Data Studio:
+# allowed_client_ip = "203.0.113.10"
+
+# IMPORTANT: set a strong password via TF_VAR_sql_admin_password (recommended)
+# sql_admin_password = "REPLACE_ME"
