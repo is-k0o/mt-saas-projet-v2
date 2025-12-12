@@ -1,0 +1,102 @@
+mt-saas-v2/
+├─ README_START_HERE.md
+├─ README.md
+├─ LICENSE
+├─ .editorconfig
+├─ .gitattributes
+├─ .gitignore                        # baseline now, refine during deployment
+│
+├─ docs/
+│  ├─ contracts/
+│  │  ├─ naming.md
+│  │  ├─ api.md
+│  │  ├─ storage.md
+│  │  └─ auth.md
+│  ├─ architecture/
+│  │  ├─ two-plane-security.md
+│  │  ├─ diagrams/
+│  │  │  ├─ architecture.drawio
+│  │  │  └─ architecture.png
+│  │  └─ adr/                         # optional: Architecture Decision Records
+│  ├─ spec/
+│  │  ├─ v2-scope.md
+│  │  ├─ data-model.md                # optional: ERD + invariants summary
+│  │  └─ onboarding.md                # optional: baseline N-1 import rules
+│  ├─ legacy/
+│  │  └─ v1-lessons.md
+│  ├─ DECISIONS.md                     # live decisions log
+│  ├─ CURRENT_STATE.md                 # live status snapshot
+│  └─ BREAKING_CHANGES.md              # whenever you rename/reshape contracts
+│
+├─ db/
+│  ├─ migrations/                      # ordered scripts for DbUp/Flyway
+│  │  ├─ directory/
+│  │  │  ├─ 0001_init.sql
+│  │  │  ├─ 0002_seed.sql
+│  │  │  └─ 0003_rls.sql
+│  │  └─ core/
+│  │     ├─ 0001_init.sql
+│  │     ├─ 0002_constraints.sql
+│  │     ├─ 0003_rls.sql
+│  │     ├─ 0004_posting_finalize_sp.sql
+│  │     └─ 0005_sanity_checks.sql
+│  ├─ seed/
+│  │  ├─ pcg/                          # Pack France reference data (pilot)
+│  │  └─ vat_fr/
+│  └─ sanity_checks/
+│     ├─ core.sql
+│     └─ directory.sql
+│
+├─ infra/
+│  ├─ terraform/
+│  │  ├─ modules/
+│  │  │  ├─ network/
+│  │  │  ├─ sql/
+│  │  │  ├─ storage/
+│  │  │  ├─ app_service/
+│  │  │  ├─ apim/
+│  │  │  ├─ front_door/
+│  │  │  ├─ monitoring/
+│  │  │  └─ fabric/                    # optional (if you IaC Fabric parts)
+│  │  └─ environments/
+│  │     ├─ dev/
+│  │     ├─ preprod/
+│  │     └─ prod/                      # optional later
+│  └─ diagrams/                        # optional infra-specific diagrams
+│
+├─ src/
+│  ├─ api/
+│  │  ├─ ComptaPlus.Api/               # .NET API (minimal APIs or controllers)
+│  │  ├─ ComptaPlus.Data/              # SQL access, RLS context, repositories
+│  │  ├─ ComptaPlus.Domain/            # domain models, enums, invariants
+│  │  ├─ ComptaPlus.Migrations/        # DbUp runner (optional)
+│  │  └─ ComptaPlus.Tests/             # unit/integration tests
+│  └─ spa/
+│     ├─ package.json
+│     ├─ src/
+│     └─ tests/
+│
+├─ pipelines/
+│  ├─ github/
+│  │  ├─ workflows/
+│  │  │  ├─ ci_api.yml
+│  │  │  ├─ ci_spa.yml
+│  │  │  ├─ deploy_infra.yml
+│  │  │  ├─ deploy_api.yml
+│  │  │  └─ deploy_spa.yml
+│  │  └─ templates/
+│  └─ scripts/
+│     ├─ run_migrations.ps1
+│     ├─ run_migrations.sh
+│     └─ smoke_test.sh
+│
+├─ tools/
+│  ├─ local-dev/
+│  │  ├─ docker-compose.yml            # optional local dependencies
+│  │  └─ init_local.sql
+│  └─ util/
+│     ├─ generate_schema_docs.py
+│     └─ validate_contracts.py
+│
+└─ .github/
+   └─ CODEOWNERS                       # optional
