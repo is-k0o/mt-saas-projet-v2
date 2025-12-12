@@ -1,0 +1,141 @@
+# ============================================================
+# mt-saas-v2 — baseline .gitignore (safe defaults)
+# Refine later when infra/CI is in place.
+# ============================================================
+
+# -------------------------
+# OS / Editor
+# -------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+*.swp
+*.swo
+*.tmp
+*.bak
+*.log
+
+# VS Code / JetBrains / Visual Studio
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+
+# -------------------------
+# Secrets & local env
+# -------------------------
+**/.env
+**/.env.*
+**/*.local.*
+**/secrets.*
+**/*secret*
+**/*password*
+**/*token*
+**/*apikey*
+**/*api_key*
+**/*.kdbx
+**/*.publishsettings
+**/*.pfx
+**/*.pem
+**/*.key
+**/*.cer
+**/*.crt
+
+# Don't commit local settings that often contain secrets
+**/appsettings.Development.json
+**/appsettings.Local.json
+**/appsettings.*.Development.json
+**/appsettings.*.Local.json
+
+# Allow committed placeholders if you want (keep these tracked)
+!**/appsettings.json
+!**/appsettings.Production.json
+!**/appsettings.Staging.json
+!**/appsettings.Template.json
+!**/appsettings.*.Template.json
+
+# -------------------------
+# .NET / Visual Studio build outputs
+# -------------------------
+**/bin/
+**/obj/
+**/TestResults/
+**/*.nupkg
+**/*.snupkg
+**/*.pdb
+**/*.cache
+**/*.cachefile
+
+# Rider
+**/.idea/
+**/*.sln.iml
+
+# -------------------------
+# Node / SPA
+# -------------------------
+**/node_modules/
+**/.pnpm-store/
+**/.yarn/
+**/.yarn-cache/
+**/.yarnrc.yml
+**/dist/
+**/build/
+**/.next/
+**/.nuxt/
+**/.vite/
+**/.parcel-cache/
+**/coverage/
+
+# -------------------------
+# Terraform
+# -------------------------
+**/.terraform/
+**/.terraform.lock.hcl
+**/*.tfstate
+**/*.tfstate.*
+**/crash.log
+**/crash.*.log
+**/override.tf
+**/override.tf.json
+**/*_override.tf
+**/*_override.tf.json
+**/*.tfvars
+**/*.tfvars.json
+
+# If you use local backend config files
+**/backend.hcl
+**/backend.tfvars
+**/backend.tfvars.json
+
+# -------------------------
+# Azure / CLI / tooling
+# -------------------------
+**/.azure/
+**/azureProfile.json
+**/AzureRmContext.json
+**/azureauth.json
+**/*.azcli
+**/*.bicepparam
+
+# -------------------------
+# Logs / dumps / temp data
+# -------------------------
+**/logs/
+**/*.dmp
+
+# -------------------------
+# Local database artifacts
+# -------------------------
+**/*.mdf
+**/*.ldf
+**/*.sqlite
+**/*.db
+**/*.bacpac
+
+# -------------------------
+# Optional: keep generated schema docs out of git (toggle if needed)
+# -------------------------
+# docs/generated/
