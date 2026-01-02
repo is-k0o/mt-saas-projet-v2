@@ -33,16 +33,35 @@ CREATE TABLE dir.company (
 GO
 
 CREATE TABLE dir.user_membership (
+    membership_id UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_dir_membership_id DEFAULT NEWID(),
     user_oid UNIQUEIDENTIFIER NOT NULL, -- Entra user object id
     cabinet_id UNIQUEIDENTIFIER NOT NULL,
     company_id UNIQUEIDENTIFIER NULL,   -- NULL means cabinet-level membership
-    role_code NVARCHAR(32) NOT NULL,    -- e.g. CabinetUser/CabinetAdmin
+    role_code NVARCHAR(32) NOT NULL,    -- e.g. CabinetUser/CabinetAdmin/CompanyUser/CompanyAdmin
     created_at DATETIME2(3) NOT NULL CONSTRAINT DF_dir_membership_created_at DEFAULT SYSUTCDATETIME(),
-    CONSTRAINT PK_dir_membership PRIMARY KEY (user_oid, cabinet_id, company_id, role_code),
+    CONSTRAINT PK_dir_membership PRIMARY KEY (membership_id),
     CONSTRAINT FK_dir_membership_cabinet FOREIGN KEY (cabinet_id) REFERENCES dir.cabinet(cabinet_id),
     CONSTRAINT FK_dir_membership_company FOREIGN KEY (company_id) REFERENCES dir.company(company_id),
-    CONSTRAINT CK_dir_role_code CHECK (role_code IN ('CabinetUser','CabinetAdmin','CompanyUser','CompanyAdmin'))
+    CONSTRAINT CK_dir_role_code CHECK (role_code IN ('CabinetUser','CabinetAdmin','CompanyUser','CompanyAdmin')),
+    CONSTRAINT CK_dir_membership_scope CHECK (
+        (company_id IS NULL AND role_code IN ('CabinetUser','CabinetAdmin'))
+        OR
+        (company_id IS NOT NULL AND role_code IN ('CompanyUser','CompanyAdmin'))
+    )
 );
+GO
+
+-- Unicité (évite les doublons) :
+--  - cabinet-level : company_id NULL
+--  - company-level : company_id NOT NULL
+CREATE UNIQUE INDEX UX_dir_membership_cabinet
+ON dir.user_membership (user_oid, cabinet_id, role_code)
+WHERE company_id IS NULL;
+GO
+
+CREATE UNIQUE INDEX UX_dir_membership_company
+ON dir.user_membership (user_oid, cabinet_id, company_id, role_code)
+WHERE company_id IS NOT NULL;
 GO
 
 CREATE INDEX IX_dir_membership_lookup

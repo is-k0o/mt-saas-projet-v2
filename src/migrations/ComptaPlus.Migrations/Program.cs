@@ -17,10 +17,7 @@ static string GetOrDefault(string name, string fallback)
 }
 
 static string BuildSqlAuthConnectionString(string fqdn, string dbName, string login, string password) =>
-    $"Server=tcp:{fqdn},1433;Database={dbName};User ID={login};Password={password};" +
-    "Encrypt=True;TrustServerCertificate=False;" +
-    // Make transient post-login stalls much less painful (GitHub-hosted runners + firewall propagation)
-    "Connection Timeout=120;ConnectRetryCount=5;ConnectRetryInterval=10;";
+    $"Server=tcp:{fqdn},1433;Database={dbName};User ID={login};Password={password};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
 static int RunDb(string dbLabel, string connectionString, string scriptsDir)
 {
@@ -33,6 +30,9 @@ static int RunDb(string dbLabel, string connectionString, string scriptsDir)
     var upgrader =
         DeployChanges.To
             .SqlDatabase(connectionString)
+            // IMPORTANT: avoid partial "drift" when a script fails (init scripts create many objects).
+            // This keeps each migration file atomic.
+            .WithTransactionPerScript()
             .JournalToSqlTable("dbo", "__schema_migrations")
             .WithScriptsFromFileSystem(scriptsDir) // filename order
             .LogToConsole()
