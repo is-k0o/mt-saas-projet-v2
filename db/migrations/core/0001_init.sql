@@ -3,6 +3,9 @@
   Pilot preprod-friendly accounting primitives.
 
   Tenancy columns: cabinet_id + company_id everywhere (API-friendly indexing).
+
+  NOTE:
+  - [rule] is a reserved keyword in SQL Server (legacy CREATE RULE), so the table name is escaped: core.[rule].
 */
 
 IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'core')
@@ -184,7 +187,7 @@ ON core.posting_line (posting_id, line_no);
 GO
 
 -- Rules (versioned)
-CREATE TABLE core.rule (
+CREATE TABLE core.[rule] (
     rule_id UNIQUEIDENTIFIER NOT NULL,
     cabinet_id UNIQUEIDENTIFIER NOT NULL,
     company_id UNIQUEIDENTIFIER NOT NULL,
@@ -203,7 +206,7 @@ CREATE TABLE core.rule (
 GO
 
 CREATE INDEX IX_core_rule_api
-ON core.rule (cabinet_id, company_id, rule_key, version DESC);
+ON core.[rule] (cabinet_id, company_id, rule_key, version DESC);
 GO
 
 -- Exceptions + comments
