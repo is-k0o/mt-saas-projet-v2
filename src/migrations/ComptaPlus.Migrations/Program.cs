@@ -17,7 +17,10 @@ static string GetOrDefault(string name, string fallback)
 }
 
 static string BuildSqlAuthConnectionString(string fqdn, string dbName, string login, string password) =>
-    $"Server=tcp:{fqdn},1433;Database={dbName};User ID={login};Password={password};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+    $"Server=tcp:{fqdn},1433;Database={dbName};User ID={login};Password={password};" +
+    "Encrypt=True;TrustServerCertificate=False;" +
+    // Make transient post-login stalls much less painful (GitHub-hosted runners + firewall propagation)
+    "Connection Timeout=120;ConnectRetryCount=5;ConnectRetryInterval=10;";
 
 static int RunDb(string dbLabel, string connectionString, string scriptsDir)
 {
