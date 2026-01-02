@@ -81,7 +81,22 @@ jobs:
           echo "rule_name=$RULE_NAME" >> "$GITHUB_OUTPUT"
           echo "runner_ip=$RUNNER_IP" >> "$GITHUB_OUTPUT"
 
-          az sql server firewall-rule create             --resource-group "${{ steps.tfout.outputs.resource_group_name }}"             --server "${{ steps.tfout.outputs.sql_server_name }}"             --name "$RULE_NAME"             --start-ip-address "$RUNNER_IP"             --end-ip-address "$RUNNER_IP" 1>/dev/null
+          az sql server firewall-rule create \
+            --resource-group "${{ steps.tfout.outputs.resource_group_name }}" \
+            --server "${{ steps.tfout.outputs.sql_server_name }}" \
+            --name "$RULE_NAME" \
+            --start-ip-address "$RUNNER_IP" \
+            --end-ip-address "$RUNNER_IP" 1>/dev/null
+
+          echo "RUNNER_IP=$RUNNER_IP"
+          echo "Firewall rules now:"
+          az sql server firewall-rule list \
+            --resource-group "${{ steps.tfout.outputs.resource_group_name }}" \
+            --server "${{ steps.tfout.outputs.sql_server_name }}" \
+            -o table
+
+          # Small propagation buffer (prevents transient timeouts right after rule creation)
+          sleep 20
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -108,4 +123,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          az sql server firewall-rule delete             --resource-group "${{ steps.tfout.outputs.resource_group_name }}"             --server "${{ steps.tfout.outputs.sql_server_name }}"             --name "${{ steps.fw.outputs.rule_name }}"
+          az sql server firewall-rule delete \
+            --resource-group "${{ steps.tfout.outputs.resource_group_name }}" \
+            --server "${{ steps.tfout.outputs.sql_server_name }}" \
+            --name "${{ steps.fw.outputs.rule_name }}"
