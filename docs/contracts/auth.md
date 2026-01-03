@@ -1,7 +1,7 @@
 # Auth Contract (v1) — Option B (Coarse at APIM, Fine in WebApp + RLS)
 
 **Status:** Draft  
-**Last updated:** YYYY-MM-DD  
+**Last updated:** 2026-01-03  
 **Audience (API):** `api://<your-api-app-id-uri>`  
 **Token version:** v2
 
@@ -58,10 +58,10 @@ For every tenant-scoped request:
 1) Extract `{cabinet_slug}` and `{company_slug}` from the route
 2) Resolve slugs → `cabinet_id`, `company_id` via Directory DB
 3) Check membership:
-   - `dir.user_company_access` contains `(user_oid, cabinet_id, company_id)`
-   - If not, return **403**
+   - MVP actuel : `dir.user_membership` contient `(user_oid, cabinet_id, company_id, role_code, ...)`
+   - Si aucune ligne ne match → **403**
 4) Resolve shard for `(cabinet_id, company_id)`
-5) Call `sec.usp_set_tenant_context(cabinet_id, company_id, user_oid)`
+5) Call `sec.usp_set_tenant_context(@cabinet_id, @company_id)`
 6) Execute queries normally (RLS filters automatically)
 
 Recommended endpoint:
@@ -69,13 +69,15 @@ Recommended endpoint:
   (used by SPA to populate the tenant selector)
 
 ## 6) Directory DB minimum tables (suggested)
-- `dir.cabinet(cabinet_id, cabinet_slug, name, ...)`
-- `dir.company(company_id, company_slug, cabinet_id, name, ...)`
-- `dir.user_company_access(user_oid, cabinet_id, company_id, role, created_at, ...)`
-- `dir.company_shard_map(company_id, shard_id, ...)` (or cabinet+company mapping)
+- `dir.cabinet(cabinet_id, cabinet_slug, display_name, ...)`
+- `dir.company(company_id, company_slug, cabinet_id, display_name, ...)`
+- `dir.user_membership(user_oid, cabinet_id, company_id, role_code, created_at, ...)`
+  - *Note :* `dir.user_company_access` est le nom “cible” envisagé à long terme. Aujourd’hui, on reste sur `user_membership` (MVP minimal runnable).
+- `dir.company_shard_map(company_id, shard_id, ...)` (ou mapping cabinet+company)
 
 ## 7) SQL / RLS contract
-- Stored proc: `sec.usp_set_tenant_context(@cabinet_id, @company_id, @user_oid)`
+- Stored proc (actuel) : `sec.usp_set_tenant_context(@cabinet_id, @company_id)`
+  - (plus tard) on peut ajouter `@user_oid` si on veut enrichir l’audit/telemetry côté DB
 - RLS predicate uses `SESSION_CONTEXT('cabinet_id')` and `SESSION_CONTEXT('company_id')`
 - Apply RLS to ALL tenant tables (documents, lines, postings, exceptions, rules, files, audit)
 

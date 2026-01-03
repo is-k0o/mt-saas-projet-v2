@@ -1,7 +1,7 @@
 # Naming Contract (v1)
 
 **Status:** Draft  
-**Last updated:** YYYY-MM-DD  
+**Last updated:** 2026-01-03  
 **Owner:** <you>  
 **Scope:** API + DB + Storage + Logs + Analytics
 

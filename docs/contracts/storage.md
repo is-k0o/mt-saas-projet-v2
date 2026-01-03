@@ -3,7 +3,7 @@
 **Storage account:** <name>  
 **Container(s):** `documents` (recommended)  
 **Status:** Draft  
-**Last updated:** YYYY-MM-DD
+**Last updated:** 2026-01-03
 
 ## 1) Goals
 - Deterministic paths (easy to debug)

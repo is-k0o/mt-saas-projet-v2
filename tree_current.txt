@@ -1,0 +1,61 @@
+mt-saas-projet-v2/  (snapshot + docs patch)
+├── .github/
+│   └── workflows/
+│       ├── db-migrate-dev.yml
+│       ├── terraform-apply-infra-dev.yml
+│       ├── terraform-bootstrap-tfstate-dev.yml
+│       └── terraform-plan-infra-dev.yml
+├── db/
+│   ├── migrations/
+│   │   ├── core/
+│   │   │   ├── 0001_init.sql
+│   │   │   └── 0002_finalize_posting_sproc.sql
+│   │   ├── directory/
+│   │   │   └── 0001_init.sql
+│   │   └── README.md
+│   └── sanity/
+│       ├── core_sanity_check.sql
+│       └── README.md
+├── docs/
+│   ├── architecture/
+│   │   └── two-plane-security.md
+│   ├── contracts/
+│   │   ├── api.md
+│   │   ├── auth.md
+│   │   ├── naming.md
+│   │   └── storage.md
+│   ├── infra/
+│   │   ├── db_migrations_dbup.md
+│   │   └── terraform_github_actions_sql.md
+│   ├── legacy/
+│   │   └── v1-lessons.md
+│   ├── spec/
+│   │   ├── v2-scope.md
+│   │   └── v2-scope_v1.1.md
+│   ├── CURRENT_STATE.md
+│   ├── DECISIONS.md
+│   └── RUNBOOK.md
+├── infra/
+│   └── terraform/
+│       ├── environments/
+│       │   └── dev/
+│       │       ├── backend.dev.hcl
+│       │       ├── main.tf
+│       │       ├── outputs.tf
+│       │       ├── providers.tf
+│       │       ├── terraform.tfvars.example
+│       │       └── variables.tf
+│       └── modules/
+│           └── sql/
+│               ├── main.tf
+│               ├── outputs.tf
+│               └── variables.tf
+├── src/
+│   └── migrations/
+│       └── ComptaPlus.Migrations/
+│           ├── ComptaPlus.Migrations.csproj
+│           └── Program.cs
+├── FIX_v1_2.md
+├── gitignore
+├── README.md
+└── tree_v2.txt

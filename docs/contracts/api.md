@@ -4,7 +4,7 @@
 **Tenant scope:** `/t/{cabinet_slug}/companies/{company_slug}`  
 **Auth:** Entra ID (PKCE for SPA) + APIM validates token  
 **Status:** Draft  
-**Last updated:** YYYY-MM-DD
+**Last updated:** 2026-01-03
 
 ## 1) Common rules
 - All tenant-scoped endpoints require a valid access token.

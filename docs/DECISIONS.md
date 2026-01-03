@@ -98,3 +98,39 @@ DB: `cabinet_id` + `company_id` everywhere.
 **Decision:** Use SQL admin login (`sqladmin`) for dev DbUp runs, with password stored in GitHub Secrets.  
 **Why:** Fast to iterate while infra + schema stabilize.  
 **Consequences:** Later we migrate to Entra admin + Entra-only auth, and stop using SQL auth for CI.
+
+---
+
+## D011 — Tenant columns duplicated on child tables (Option B)
+**Date:** 2026-01-03  
+**Status:** Accepted  
+**Decision:** Add `cabinet_id` + `company_id` to core “child” tables (ex: `document_line`, `posting_line`, `exception_comment`).  
+**Why:** Makes RLS and tenant-scoped queries simpler and more robust (no dependency on joins to parent to enforce scope).  
+**Consequences:** Must keep tenant columns consistent with the parent rows (enforced by write-path + sanity checks).
+
+---
+
+## D012 — RLS enforced in Core DB only
+**Date:** 2026-01-03  
+**Status:** Accepted  
+**Decision:** Implement SQL Row-Level Security only in the **Core** DB, not in **Directory**.  
+**Why:** Core is the transactional data plane (documents/postings/exceptions) and the highest risk for leakage; Directory is mostly membership + routing data, and we keep it simpler initially.  
+**Consequences:** API must treat Directory as an authorization source (membership), but the *hard-stop* is in Core RLS.
+
+---
+
+## D013 — Stable runtime DB role (decouple from identity naming)
+**Date:** 2026-01-03  
+**Status:** Accepted  
+**Decision:** Create a stable DB role (ex: `app_runtime`) and grant it the minimum rights needed by the API. Add actual identities (Managed Identity / Entra users) later as role members.  
+**Why:** Avoids blocking progress on identity naming and deployment order; keeps DB permissions deterministic.  
+**Consequences:** Need a clear “role contract” (what rights the API needs) and a repeatable script to add users to the role.
+
+---
+
+## D014 — Sanity checks are not migrations
+**Date:** 2026-01-03  
+**Status:** Accepted  
+**Decision:** Keep sanity checks as standalone scripts (ex: `db/sanity/*.sql`) rather than running them as DbUp migrations.  
+**Why:** Checks are useful to run repeatedly (and sometimes interactively) without modifying schema history.  
+**Consequences:** Add them to the runbook and optionally run them in CI as a separate step later.

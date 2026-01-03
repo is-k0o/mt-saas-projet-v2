@@ -1,120 +1,124 @@
-# CI/CD — Deploy Azure SQL via Terraform (GitHub Actions)
+# CI/CD — Terraform (infra dev) + GitHub OIDC
 
-This guide sets up **real CI/CD** for `infra/terraform/environments/dev` using:
-- GitHub Actions
-- Azure Login via **OIDC** (no long-lived Azure secret) citeturn0search0turn0search3turn0search9
-- Remote Terraform state in **Azure Blob Storage (azurerm backend)** citeturn0search2turn0search8
+**Last updated:** 2026-01-03
 
-> Note: you will still store **one secret** for the SQL admin password (SQL auth). Later, you can move to Entra-only DB auth and reduce this further.
+Ce guide documente la partie infra (Terraform) et l’auth GitHub → Azure via **OIDC**.
 
----
-
-## 1) What you get
-
-Workflows:
-- `terraform-bootstrap-tfstate-dev.yml` — creates RG + Storage Account + container for TF state (run once)
-- `terraform-plan-infra-dev.yml` — runs `fmt/validate/plan` on PRs to `main`
-- `terraform-apply-infra-dev.yml` — runs `apply` on pushes to `main` (recommended: protect with Environment approvals)
-
-Terraform:
-- SQL logical server + two DBs (`*_core`, `*_directory`)
-- Remote state configured by `backend.dev.hcl`
+> Note : pour l’instant, les migrations DbUp utilisent encore **SQL auth** en dev (password en secret).
+> Le plan long terme est de passer en **Entra-only** (admin Entra + Managed Identity + rôles DB).
 
 ---
 
-## 2) Azure prerequisites (OIDC trust)
+## 1) Ce que tu as dans le repo
 
-### 2.1 Create an Entra app registration for GitHub Actions
-You need an app/service principal that GitHub can impersonate via OIDC. Follow GitHub’s and Microsoft’s OIDC guidance. citeturn0search3turn0search0
+Workflows :
+- `terraform-bootstrap-tfstate-dev.yml` — crée le backend Terraform (run 1 fois)
+- `terraform-plan-infra-dev.yml` — plan sur PR
+- `terraform-apply-infra-dev.yml` — apply sur `main`
+- `db-migrate-dev.yml` — exécute DbUp (Directory + Core) après lecture des outputs Terraform
 
-The output you need for GitHub:
-- **Client ID**
-- **Tenant ID**
-- **Subscription ID**
-
-### 2.2 Add a federated credential (GitHub OIDC)
-Create a federated identity credential on the app so GitHub Actions can authenticate without a client secret. citeturn0search3turn0search21
-
-Recommended subject for environment-protected deploys:
-- `repo:<OWNER>/<REPO>:environment:dev`
-
-### 2.3 Assign Azure RBAC roles
-At minimum, give the app **Contributor** on the target resource group (dev RG).
-
-For the Terraform state storage account, also grant:
-- `Storage Blob Data Contributor` on the **state storage account** (or container).  
-This is required for the azurerm backend to read/write state using Entra auth.
+Terraform :
+- `infra/terraform/environments/dev/*`
+- modules : `infra/terraform/modules/sql/*`
 
 ---
 
-## 3) GitHub repo setup
+## 2) Pré-requis Azure (OIDC)
 
-### 3.1 Create GitHub Environment: `dev`
-In your repo:
-- Settings → Environments → **New environment**: `dev`
-- (Recommended) Require manual approval for `terraform-apply-infra-dev.yml`.
+### 2.1 App Registration (service principal)
+Créer une application Entra (service principal) dédiée aux workflows GitHub.
+Ce SP sera utilisé via OIDC (pas de secret long-lived).
 
-### 3.2 Add GitHub Secrets (Repository or Environment)
-Add these secrets:
+Tu auras besoin de :
 - `AZURE_CLIENT_ID`
 - `AZURE_TENANT_ID`
 - `AZURE_SUBSCRIPTION_ID`
-- `TF_VAR_SQL_ADMIN_PASSWORD` (strong password for SQL auth)
 
-OIDC requires workflow permissions `id-token: write`. The workflows already set it. citeturn0search9turn0search13
+### 2.2 Federated credential (GitHub OIDC)
+Ajouter un “Federated identity credential” sur l’app, typiquement basé sur l’environment GitHub :
+- Subject recommandé : `repo:<OWNER>/<REPO>:environment:dev`
+- Issuer : `https://token.actions.githubusercontent.com`
+- Audience : `api://AzureADTokenExchange`
 
-### 3.3 Add GitHub Variables (Environment variables)
-Add these variables under environment `dev`:
-- `TFSTATE_RG` (e.g. `rg-mtsaas-v2-tfstate-weu`)
-- `TFSTATE_LOCATION` (e.g. `westeurope`)
-- `TFSTATE_STORAGE_ACCOUNT` (e.g. `mtsaasv2tfstateweu01`)
-- `TFSTATE_CONTAINER` (e.g. `tfstate`)
+### 2.3 RBAC minimal
+- Sur le RG cible (dev) : **Contributor**
+- Sur le Storage Account du state Terraform : **Storage Blob Data Contributor**
 
 ---
 
-## 4) Configure the backend file
+## 3) Pré-requis GitHub (Environment dev)
 
-Edit:
-- `infra/terraform/environments/dev/backend.dev.hcl`
+### 3.1 Créer l’environment `dev`
+Repo → Settings → Environments → `dev`.
+Optionnel : exiger une approval manuelle sur `terraform-apply-infra-dev`.
 
-Set your real values:
+### 3.2 Secrets (env `dev`)
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
+- `TF_VAR_SQL_ADMIN_PASSWORD` (temporaire ; SQL auth pour Azure SQL)
+
+### 3.3 Variables (env `dev`)
+Backend state :
+- `TFSTATE_RG`
+- `TFSTATE_LOCATION`
+- `TFSTATE_STORAGE_ACCOUNT`
+- `TFSTATE_CONTAINER`
+
+Optionnel (DbUp dev) :
+- `SQL_ADMIN_LOGIN` (défaut runner : `sqladmin`)
+
+---
+
+## 4) Backend Terraform (backend.dev.hcl)
+
+Fichier : `infra/terraform/environments/dev/backend.dev.hcl`
+
+Il référence :
 - `resource_group_name`
-- `storage_account_name` (globally unique, 3–24 lowercase letters/numbers)
+- `storage_account_name`
 - `container_name`
 - `key`
 
----
-
-## 5) First run (bootstrap)
-
-Run the bootstrap workflow once:
-- Actions → **bootstrap-tfstate-dev** → Run workflow
-
-This creates the remote state container.
+Le workflow **bootstrap** est là pour te créer RG/SA/container si besoin.
 
 ---
 
-## 6) Normal workflow
+## 5) Flux normal
 
-### PR to main
-- Open a PR that changes `infra/terraform/**`
-- The **plan** workflow runs and uploads an artifact.
+1) Bootstrap (une fois)
+- Actions → `bootstrap-tfstate-dev` → Run
 
-### Merge to main
-- On merge/push to `main`, the **apply** workflow runs.
-- If you enabled environment approvals, it will wait for approval.
+2) PR infra
+- Ouvrir une PR avec des changements dans `infra/terraform/**`
+- `terraform-plan-infra-dev` tourne
 
----
+3) Merge / push main
+- `terraform-apply-infra-dev` tourne
 
-## 7) Troubleshooting quick hits
-
-- **OIDC login fails** → check federated credential subject/issuer/audience. citeturn0search3turn0search0
-- **Backend cannot write state** → missing `Storage Blob Data Contributor` on the state storage account/container.
-- **SQL connect issues** → dev firewall rules might block your IP; set `allowed_client_ip` (local only) or keep public access on for dev.
+4) Migrations DB
+- Après un push dans `db/migrations/**` ou `src/migrations/**` : `db-migrate-dev` tourne
 
 ---
 
-## 8) Next hardening steps (after schema/migrations work)
-1) Disable public SQL access + Private Endpoint (preprod)
-2) Entra admin on SQL server, reduce SQL auth usage
-3) Diagnostic settings + Defender for SQL
+## 6) Troubleshooting rapide
+
+- **OIDC login fails**
+  - vérifier subject/issuer/audience du federated credential
+  - vérifier `permissions: id-token: write` dans le workflow
+
+- **Terraform backend access denied**
+  - manque `Storage Blob Data Contributor` sur le Storage Account (state)
+
+- **DbUp ne se connecte pas au SQL**
+  - public access / firewall : `db-migrate-dev` ajoute une règle temporaire
+  - si tu as désactivé le public network access, il faudra une approche Private Endpoint (plus tard)
+
+---
+
+## 7) Hardening (plus tard)
+
+1) SQL Server : désactiver public access + Private Endpoint
+2) Activer admin Entra sur le SQL Server
+3) Remplacer SQL auth par Entra-only (DbUp + API via MI)
+4) Diagnostics + Defender for SQL
