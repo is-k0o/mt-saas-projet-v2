@@ -1,6 +1,6 @@
 # CURRENT_STATE — mt-saas v2
 
-**Last updated:** 2026-01-03  
+**Last updated:** 2026-02-03  
 **Repo:** is-k0o/mt-saas-projet-v2 (private)  
 **Environment:** dev
 
@@ -67,6 +67,7 @@
 ### Scripts (expected in repo)
 - Directory:
   - `db/migrations/directory/0001_init.sql`
+  - `db/migrations/directory/0002_runtime_procs.sql`
 - Core:
   - `db/migrations/core/0001_init.sql`
   - `db/migrations/core/0002_finalize_posting_sproc.sql`
@@ -79,6 +80,10 @@
 #### Directory DB (`dir`)
 - ✅ Tables:
   - `dir.cabinet`, `dir.company`, `dir.user_membership`
+- ✅ Runtime stored procs (slug → IDs → authz):
+  - `dir.usp_resolve_company`
+  - `dir.usp_check_membership`
+  - `dir.usp_get_my_companies`
 - ✅ `dbo.__schema_migrations`
 
 #### Core DB (`core` + `sec`)
@@ -99,6 +104,9 @@
 
 ## 4) Sanity checks (manual)
 
+- ✅ Playbook: `docs/sanity/directory_runtime.md`
+  - validates resolve / allow / deny / list access on Directory runtime procs
+
 - ✅ Script: `db/sanity/core_sanity_check.sql`
   - outputs a small **OK/WARN/KO** report (tenant columns, RLS objects, policy enabled, basic consistency checks)
   - note: if the DB has no data yet, the “sample tenant selected” check will warn/KO (normal)
@@ -118,8 +126,8 @@
 
 ## 6) Next steps (🔜)
 
-1) Directory: design the “runtime” access surface (views/procs) used by the API to resolve slugs → IDs and verify membership.
-2) API skeleton (auth + routes) + DB access pattern:
+1) Directory: ✅ runtime access surface implemented (`0002_runtime_procs.sql`) + sanity checks.
+2) API skeleton (auth + routes) + DB access pattern (Option B):
    - resolve tenant via Directory
    - call `sec.usp_set_tenant_context`
    - read/write in Core (RLS as hard-stop)
